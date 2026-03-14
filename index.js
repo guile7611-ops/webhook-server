@@ -4,6 +4,7 @@ const { Pool } = require("pg");
 const dotenv = require("dotenv");
 const { extractBudgetData } = require("./services/extractBudgetData");
 const saveBudget = require("./services/saveBudget");
+const pool = require("./db");
 
 dotenv.config();
 
@@ -11,12 +12,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+
 
 async function createTable() {
   try {
