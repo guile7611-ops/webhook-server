@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const { extractBudgetData } = require("./services/extractBudgetData");
 const saveBudget = require("./services/saveBudget");
 const pool = require("./db");
+const generateBudgetPDF = require("./services/generateBudgetPDF");
 
 dotenv.config();
 
@@ -126,6 +127,7 @@ app.post("/generate-budget", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.get("/budgets/:telefone", async (req, res) => {
   try {
     const { telefone } = req.params;
@@ -144,6 +146,37 @@ app.get("/budgets/:telefone", async (req, res) => {
     console.error("Erro ao buscar orçamentos:", error);
     res.status(500).json({
       error: "Erro interno ao buscar orçamentos"
+    });
+  }
+});
+
+app.get("/budget/:id/pdf", async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const result = await pool.query(
+      "SELECT * FROM budgets WHERE id = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Orçamento não encontrado"
+      });
+    }
+
+    const budget = result.rows[0];
+
+    const pdfPath = await generateBudgetPDF(budget);
+
+    res.download(pdfPath);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Erro ao gerar PDF"
     });
   }
 });
