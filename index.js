@@ -1,29 +1,71 @@
-const express = require("express")
-const cors = require("cors")
+const express = require("express");
+const cors = require("cors");
+const { Pool } = require("pg");
 
-const app = express()
-app.use(express.json())
-app.use(cors())
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-app.post("/webhook", (req, res) => {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
 
-  console.log("Mensagem recebida")
-
-  const data = req.body
-
-  if (data?.data?.key?.remoteJid) {
-    console.log("Número:", data.data.key.remoteJid)
+async function createTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        telefone TEXT,
+        mensagem TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Tabela conversations pronta");
+  } catch (error) {
+    console.error("Erro ao criar tabela:", error.message);
   }
+}
 
-  if (data?.data?.message?.conversation) {
-    console.log("Mensagem:", data.data.message.conversation)
+createTable();
+
+app.get("/", (req, res) => {
+  res.send("Webhook server online");
+});
+
+app.post("/webhook", async (req, res) => {
+  try {
+    const data = req.body;
+
+    const numero = data?.data?.key?.remoteJid || null;
+    const mensagem =
+      data?.data?.message?.conversation ||
+      data?.data?.message?.extendedTextMessage?.text ||
+      null;
+
+    console.log("Mensagem recebida");
+    console.log("Número:", numero);
+    console.log("Mensagem:", mensagem);
+
+    if (numero && mensagem) {
+      await pool.query(
+        "INSERT INTO conversations (telefone, mensagem) VALUES ($1, $2)",
+        [numero, mensagem]
+      );
+      console.log("Mensagem salva no banco");
+    }
+
+    return res.status(200).json({ status: "received" });
+  } catch (error) {
+    console.error("Erro no webhook:", error.message);
+    return res.status(500).json({ error: "internal_error" });
   }
+});
 
-  res.status(200).json({
-    status: "received"
-  })
-})
+const PORT = process.env.PORT || 3000;
 
-app.listen(3000, () => {
-  console.log("Servidor rodando")
-})
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
