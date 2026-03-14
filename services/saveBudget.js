@@ -1,15 +1,11 @@
 const pool = require("../db");
 
-async function saveBudget(telefone, dadosExtraidos) {
-  const query = `
-    INSERT INTO budgets (telefone, dados_json)
-    VALUES ($1, $2::jsonb)
-    RETURNING *;
-  `;
+async function saveBudget(telefone, dados) {
 
-  const values = [telefone, JSON.stringify(dadosExtraidos)];
-
-  const result = await pool.query(query, values);
+  const result = await pool.query(
+    "INSERT INTO budgets (telefone, dados_json) VALUES ($1,$2) RETURNING *",
+    [telefone, JSON.stringify(dados)]
+  );
 
   return result.rows[0];
 }
