@@ -66,6 +66,22 @@ app.post("/webhook", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+app.get("/conversations/:telefone", async (req, res) => {
+  try {
+    const { telefone } = req.params;
+
+    const result = await pool.query(
+      "SELECT * FROM conversations WHERE telefone = $1 ORDER BY created_at ASC",
+      [telefone]
+    );
+
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Erro ao buscar conversas:", error.message);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
