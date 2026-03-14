@@ -59,6 +59,7 @@ app.post("/webhook", async (req, res) => {
       );
       console.log("Mensagem salva no banco");
     }
+    
 
     return res.status(200).json({ status: "received" });
   } catch (error) {
@@ -125,6 +126,27 @@ app.post("/generate-budget", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.get("/budgets/:telefone", async (req, res) => {
+  try {
+    const { telefone } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT * FROM budgets
+      WHERE telefone = $1
+      ORDER BY created_at DESC
+      `,
+      [telefone]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Erro ao buscar orçamentos:", error);
+    res.status(500).json({
+      error: "Erro interno ao buscar orçamentos"
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
