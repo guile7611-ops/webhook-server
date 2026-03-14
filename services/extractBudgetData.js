@@ -6,11 +6,17 @@ async function extractBudgetData(conversationText) {
     input: `
 Analise a conversa de WhatsApp abaixo e extraia dados para geração de orçamento.
 
+Regras:
+- Não invente informações.
+- Se não souber, use null.
+- Retorne somente um JSON puro.
+- Não use bloco de código.
+- Não use markdown.
+
 Conversa:
 ${conversationText}
 
-Retorne apenas JSON no formato:
-
+Formato esperado:
 {
   "cliente_nome": null,
   "servico": null,
@@ -21,7 +27,11 @@ Retorne apenas JSON no formato:
 `,
   });
 
-  return response.output_text;
+  let text = response.output_text.trim();
+
+  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+  return JSON.parse(text);
 }
 
 module.exports = { extractBudgetData };
